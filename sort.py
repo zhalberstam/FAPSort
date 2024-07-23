@@ -71,7 +71,7 @@ def output_results(students, output_filename):
             writer.writerow(row)
 
 def main():
-    input_filename = 'FAP Workshop Preferences Form (Responses) - Form Responses 1.tsv'
+    input_filename = 'FAP_Workshop_Preferences_Dummy_Data.tsv'
     output_filename = 'workshop_assignments.csv'
     
     students, workshops = read_input_data(input_filename)
