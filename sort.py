@@ -1,9 +1,9 @@
 import random
 import csv
+from collections import defaultdict
 
 # Constants
-WORKSHOP_CAPACITY = 12
-TOTAL_CAPACITY = 24
+WORKSHOP_CAPACITY = 17
 DAYS = 3
 WORKSHOPS_PER_DAY = 2
 
@@ -27,14 +27,16 @@ def read_input_data(filename):
         for row in reader:
             name = row['Name']
             email = row['Email Address']
-            preferences = [
-                [row[f'Workshop Batch {i} [First Choice]'], row[f'Workshop Batch {i} [Second Choice]'],
-                 row[f'Workshop Batch {i} [Third Choice]'], row[f'Workshop Batch {i} [Fourth Choice]'],
-                 row[f'Workshop Batch {i} [Fifth Choice]'], row[f'Workshop Batch {i} [Sixth Choice]']]
-                for i in range(1, 4)
-            ]
+            preferences = []
+            for i in range(1, DAYS + 1):
+                batch_prefs = []
+                for j in range(1, 7):  # Assuming 6 choices per batch
+                    choice = row.get(f'Workshop Batch {i} [{"First" if j == 1 else "Second" if j == 2 else "Third" if j == 3 else "Fourth" if j == 4 else "Fifth" if j == 5 else "Sixth"} Choice]')
+                    if choice:
+                        batch_prefs.append(choice)
+                        workshops.add(choice)
+                preferences.append(batch_prefs)
             students.append(Student(name, email, preferences))
-            workshops.update(sum(preferences, []))
     return students, {workshop: Workshop(workshop) for workshop in workshops}
 
 def assign_workshops(students, workshops, day):
@@ -57,7 +59,12 @@ def assign_workshops(students, workshops, day):
 def output_results(students, output_filename):
     with open(output_filename, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Name', 'Email', 'Day 1 Morning', 'Day 1 Afternoon', 'Day 2 Morning', 'Day 2 Afternoon', 'Day 3 Morning', 'Day 3 Afternoon'])
+        header = ['Name', 'Email']
+        for day in range(1, DAYS + 1):
+            for session in ['Morning', 'Afternoon']:
+                header.append(f'Day {day} {session}')
+        writer.writerow(header)
+        
         for student in students:
             row = [student.name, student.email]
             for day in range(DAYS):
@@ -70,6 +77,40 @@ def output_results(students, output_filename):
                         row.append("Unassigned")
             writer.writerow(row)
 
+def print_statistics(students, workshops):
+    choice_counts = defaultdict(int)
+    workshop_scores = defaultdict(int)
+    workshop_appearances = defaultdict(int)
+    unassigned_count = 0
+    total_assignments = DAYS * WORKSHOPS_PER_DAY * len(students)
+    
+    for student in students:
+        for day in range(DAYS):
+            for session in range(WORKSHOPS_PER_DAY):
+                if session < len(student.assignments[day]):
+                    workshop = student.assignments[day][session]
+                    preference = student.preferences[day].index(workshop.name) + 1
+                    choice_counts[preference] += 1
+                    workshop_scores[workshop.name] += preference
+                    workshop_appearances[workshop.name] += 1
+                else:
+                    unassigned_count += 1
+    
+    print("Assignment Statistics:")
+    for choice, count in sorted(choice_counts.items()):
+        print(f"Choice {choice}: {count}")
+    
+    print(f"\nUnassigned slots: {unassigned_count}")
+    print(f"Percentage of assignments filled: {((total_assignments - unassigned_count) / total_assignments) * 100:.2f}%")
+    
+    print("\nWorkshop Popularity (lower score = more popular):")
+    workshop_avg_scores = {w: workshop_scores[w] / workshop_appearances[w] 
+                           for w in workshop_scores}
+    sorted_workshops = sorted(workshop_avg_scores.items(), key=lambda x: x[1])
+    
+    for workshop, avg_score in sorted_workshops:
+        print(f"{workshop}: {avg_score:.2f} (assigned {workshop_appearances[workshop]} times)")
+
 def main():
     input_filename = 'FAP_Workshop_Preferences_Dummy_Data.tsv'
     output_filename = 'workshop_assignments.csv'
@@ -80,6 +121,7 @@ def main():
         assign_workshops(students, workshops, day)
     
     output_results(students, output_filename)
+    print_statistics(students, workshops)
 
 if __name__ == "__main__":
     main()
