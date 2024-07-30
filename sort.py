@@ -3,9 +3,9 @@ import csv
 from collections import defaultdict
 
 # Constants
-WORKSHOP_CAPACITY = 17
 DAYS = 3
 WORKSHOPS_PER_DAY = 2
+WORKSHOP_CAPACITY = 17
 
 class Student:
     def __init__(self, name, email, preferences):
@@ -15,9 +15,10 @@ class Student:
         self.assignments = [[] for _ in range(DAYS)]
 
 class Workshop:
-    def __init__(self, name):
+    def __init__(self, name, capacity = WORKSHOP_CAPACITY):
         self.name = name
         self.assigned_students = [[] for _ in range(DAYS * WORKSHOPS_PER_DAY)]
+        self.capacity = capacity #some workshops have different capacity
 
 def read_input_data(filename):
     students = []
@@ -51,10 +52,27 @@ def assign_workshops(students, workshops, day):
         for student in students:
             for preference in student.preferences[day-1]:
                 workshop = workshops[preference]
-                if len(workshop.assigned_students[day*2 - 2 + session]) < WORKSHOP_CAPACITY and preference not in [w.name for w in student.assignments[day-1]]:
+                if len(workshop.assigned_students[day*2 - 2 + session]) < workshop.capacity and preference not in [w.name for w in student.assignments[index] for index in range(day)]: #check if the workshop has been assigned on a previous day
                     workshop.assigned_students[day*2 - 2 + session].append(student)
                     student.assignments[day-1].append(workshop)
                     break
+                    
+def gale_shapley_assigner(students, workshops, day):
+    random.shuffle(students)
+    
+    unassigned_students = list(students)
+    assignments = {students: None for student in students}
+    current_assignments = {workshop: [] for workshop in capacities}
+
+    while unassigned_students:
+        student = unassigned_students.pop(0)
+        workshop = student.preferences[day-1]
+        preferences_index[student] += 1
+        
+
+
+
+
 
 def output_results(students, output_filename):
     with open(output_filename, 'w', newline='') as f:
